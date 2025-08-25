@@ -551,25 +551,62 @@ def user_dashboard():
 # 관리자 대시보드 ---------------------------------------------
 def user_management():
     user_data = create_sample_user_data()
+    
+    # ---------- 상단 지표 카드 ----------
+    col1, col2 = st.columns([1.5,1])
+    
+    with col1:
+        st.error("여기는 관리자가 접근할 수 있는 영역입니다.")
+        st.subheader("📊 사용자 통계")
+        
+    with col2:
+        col6, col7, col8 = st.columns(3)
 
-    st.subheader("📊 사용자 통계")
+        # 평균 사용 시간 delta 계산
+        delta_time = user_data["사용 시간"].iloc[-1] - user_data["사용 시간"].iloc[-2]
+        delta_freq = user_data["이용 빈도"].iloc[-1] - user_data["이용 빈도"].iloc[-2]
+        delta_age = user_data["나이"].iloc[-1] - user_data["나이"].iloc[-2]
+        # Metric 카드
+        col6.metric("⏱ 평균 사용 시간", f"{user_data['사용 시간'].mean():.0f}분", f"{delta_time:+.2f}")
+        col7.metric("📈 평균 이용 빈도", f"{user_data['이용 빈도'].mean():.0f}회", f"{delta_freq:+.2f}")
+        col8.metric("🎂 평균 나이", f"{user_data['나이'].mean():.0f}세", f"{delta_age:+.2f}")
+    st.markdown("---")  # 구분선
 
-    st.markdown("### ✅ 사용자 가입 추이")
-    st.plotly_chart(px.line(user_data, x='날짜', y='가입 수'), use_container_width=True)
-
-    st.markdown("### ✅ 성별 비율")
-    st.plotly_chart(px.pie(user_data, names='성별'), use_container_width=True)
-
-    st.markdown("### ✅ 나이대 분포")
-    st.plotly_chart(px.histogram(user_data, x='나이'), use_container_width=True)
-
-    st.markdown("### ✅ 감정 트렌드")
-    st.plotly_chart(px.histogram(user_data, x='감정'), use_container_width=True)
-
-    st.markdown("### ✅ 평균 사용 시간 & 이용 빈도")
-    col1, col2 = st.columns(2)
-    col1.metric("평균 사용 시간 (분)", f"{user_data['사용 시간'].mean():.2f}")
-    col2.metric("평균 이용 빈도", f"{user_data['이용 빈도'].mean():.2f}")
+    # ---------- 하단 차트 영역 ----------
+    col1, col2, col3, col4 = st.columns(4, gap="medium")
+    
+    # 1) 가입 추이
+    with col1:
+        st.markdown("🆕 **가입 추이**")
+        fig_line = px.line(
+            user_data, x='날짜', y='가입 수',
+            markers=True,
+            color_discrete_sequence=["#636EFA"]
+        )
+        fig_line.update_layout(height=300, width=300, margin=dict(l=10, r=10, t=30, b=10))
+        st.plotly_chart(fig_line, use_container_width=False)
+    
+    # 2) 성별 비율
+    with col2:
+        st.markdown("👫 **성별 비율**")
+        fig_pie = px.pie(user_data, names='성별', hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
+        fig_pie.update_layout(height=300, width=300, margin=dict(l=10, r=10, t=30, b=10))
+        st.plotly_chart(fig_pie, use_container_width=False)
+    
+    # 3) 나이대 분포
+    with col3:
+        st.markdown("🎂 **나이대 분포**")
+        fig_hist = px.histogram(user_data, x='나이', nbins=10, color_discrete_sequence=["#EDB7AD"])
+        fig_hist.update_layout(height=300, width=300, margin=dict(l=10, r=10, t=30, b=10))
+        st.plotly_chart(fig_hist, use_container_width=False)
+    
+    # 4) 감정 트렌드
+    with col4:
+        st.markdown("😊 **감정 트렌드**")
+        fig_emotion = px.histogram(user_data, x='감정', color='감정', 
+                                   color_discrete_sequence=px.colors.qualitative.Pastel)
+        fig_emotion.update_layout(height=300, width=300, margin=dict(l=10, r=10, t=30, b=10))
+        st.plotly_chart(fig_emotion, use_container_width=False)
 
 def evaluation():
     st.subheader("⭐ 고객 평가")
@@ -618,7 +655,6 @@ def money_management():
 
 def admin_dashboard():
     st.title("👮‍♂️ 츄러스미 관리자 Dash Board")
-    st.write("여기는 관리자가 접근할 수 있는 영역입니다.")
 
     # 사이드바 메뉴
     with st.sidebar:
@@ -642,12 +678,10 @@ def admin_dashboard():
         logout()
         
 # 실행 흐름 -----------------------------
-# if st.session_state.logged_in:
-#     if st.session_state.role == "admin":
-#         admin_dashboard()
-#     else:
-#         user_dashboard()
-# else:
-#     login()
-
-user_dashboard()
+if st.session_state.logged_in:
+    if st.session_state.role == "admin":
+        admin_dashboard()
+    else:
+        user_dashboard()
+else:
+    login()
