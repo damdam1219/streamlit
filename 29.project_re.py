@@ -98,80 +98,93 @@ def my_dashboard():
     today_depression = df_psych[df_psych['날짜'] == datetime.now().date()]['우울점수'].values
     today_depression = today_depression[0] if len(today_depression) > 0 else np.nan
     
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    with kpi1:
+    #st.markdown('<div class="card">', unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns([2,1,1,1])
+    with col1:
+        st.markdown('''**📅 로그인 날짜 선택**''')
+        login_date = st.date_input(
+            "로그인 날짜를 선택하세요",
+            value=df_psych['날짜'].max(),
+            min_value=df_psych['날짜'].min(),
+            max_value=df_psych['날짜'].max())
+    
+    with col2:
         st.metric(
             label="오늘 사용 시간",
             value=f"{total_usage_hour}시간 {total_usage_min}분",
             delta="+30분"  
         )
 
-    with kpi2:
+    with col3:
          st.metric(
         label="오늘 우울 점수",
         value=f"😔 {today_depression:.1f}",
         delta="+0.5"  
     )
 
-    with kpi3:
+    with col4:
         st.metric(
         label="최근 최고 우울 점수",
         value=f"📈 {max_depression:.1f}",
         delta="+1.0"  # 전일 대비 변화 예시
     )
 
-    with kpi4:
-        st.metric(
-        label="최근 로그인 날짜",
-        value=f"📅 {login_time.strftime('%Y-%m-%d')}",
-        delta=""  # 날짜는 delta 없으면 빈 문자열
-    )
+    # with kpi4:
+    #     st.metric(
+    #     label="최근 로그인 날짜",
+    #     value=f"📅 {login_time.strftime('%Y-%m-%d')}",
+    #     delta=""  # 날짜는 delta 없으면 빈 문자열
+    # )
 
     st.divider()
-    
     col1, col2, col3 = st.columns([1, 1, 1])
-    # (카드 바깥에) 메모 데이터 정의
-    memo_data = {
-        date: f"{date}에 작성한 일기나 메모 내용입니다. 감정 상태를 기록해보세요."
-        for date in df_psych['날짜']
-    }
-    df_memo = pd.DataFrame(list(memo_data.items()), columns=['날짜', '메모']).set_index('날짜')
-
     with col1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('''
-                    **📅 로그인 날짜 선택**''')
-        login_date = st.date_input(
-            "로그인 날짜를 선택하세요",
-            value=df_psych['날짜'].max(),
-            min_value=df_psych['날짜'].min(),
-            max_value=df_psych['날짜'].max()
-        )
-        st.markdown("---")
-          # ✅ 메모 카드
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown('''
-                    **📝메모장**''')
-        
-        # 초기 메모값 가져오기
-        initial_memo = ""
-        if login_date in df_memo.index:
-            initial_memo = df_memo.loc[login_date, '메모']
-        else:
-            initial_memo = "오늘의 감정 상태나 생각을 기록해보세요."
-        
-        # 메모 입력 영역
-        memo_input = st.text_area("메모 입력", value=initial_memo, height=100, key=f"memo_{login_date}")
-        
-        # 세션 상태에 저장
-        if 'memo_storage' not in st.session_state:
-            st.session_state['memo_storage'] = {}
-        st.session_state['memo_storage'][str(login_date)] = memo_input
-        if st.button("저장"):
-            st.success("저장되었습니다 ✅")
-        st.markdown('</div>', unsafe_allow_html=True)
+        tabs = st.tabs(["기본 정보", "상담 히스토리", "최근 상담 요약", "추천 행동"])
 
-    
+        with tabs[0]:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("**📝 기본 정보**")
+            st.markdown("""
+            - 이름: 김다은  
+            - 성별: 여자 👩
+            """)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tabs[1]:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("**📁 상담 히스토리**")
+            st.markdown("""
+            - 총 7회  
+            - 최근 상담: 2025.08.19  
+            - 주요 키워드: 불안, 자기비하, 가족문제
+            """)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tabs[2]:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("**🌧️ 최근 상담 요약**")
+            st.markdown("""
+            - 주된 감정: 슬픔, 불안  
+            - 주요 키워드: 외로움, 관계 스트레스, 무기력  
+            - 긍정 반응 키워드: 여행, 가족, 취미
+            - 
+            """)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with tabs[3]:
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.markdown("**💡 추천 행동**")
+            st.markdown("""
+- 하루 5분 감정 기록하기  
+  (긍정적이든 부정적이든, 글로 적으면 감정 정리에 도움)  
+- 주 30분 가벼운 외출, 산책, 취미 활동  
+  (몸을 움직이면 불안과 무기력 완화 효과)  
+- 가족, 친구와 짧은 소통 시간 갖기  
+  (감정을 나누는 것만으로도 외로움 완화)  
+- 필요 시 상담사 또는 심리 전문가와 상담 연계  
+  (전문가가 구체적인 대처 방법 안내)
+""")
+            st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
         st.markdown('''
@@ -226,8 +239,7 @@ def my_dashboard():
 
     with col3:
         # ✅ 우울 점수 변화 추이 카드
-        st.markdown('''
-                    **📉우울점수변화추이**''')
+        st.markdown(''' **📉우울점수변화추이**''')
         
         fig_line = go.Figure()
         fig_line.add_trace(go.Scatter(
@@ -247,43 +259,12 @@ def my_dashboard():
             paper_bgcolor='#f5faff'
         )
         st.plotly_chart(fig_line, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("""**📝 챗봇 상담 요약 리포트**""")
-        st.markdown("""
-        - 🌧️ **최근 상담 요약**
-          - 주된 감정: 슬픔, 불안  
-          - 주요 키워드: 외로움, 관계 스트레스, 무기력  
-          - 긍정 반응 키워드: 여행, 가족, 취미  
 
-        - 💡 **추천 행동**
-          - 하루 1회 감정 일기 작성  
-          - 주 1회 야외 산책 또는 활동  
-          - 필요 시 전문가 상담 연계  
-        """)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # with col4:
-    #     st.markdown('<div class="card">', unsafe_allow_html=True)
-    #     st.subheader("👤 사용자 정보 및 추천")
-    #     st.markdown(f"""
-    #     - 이름: 김다은  
-    #     - 성별: 여자 👩
-    #     - 📁 **상담 히스토리**
-    #         - 총 7회 | 최근 상담: 2025.08.19
-    #         - 주요 키워드: 불안, 자기비하, 가족문제
-            
-    #     - 🎧 **추천 콘텐츠**
-    #       - 명상 플레이리스트  
-    #       - 감정 회복 영상 모음  
-
-    #     - 🏥 **추천 병원**
-    #     🏠 현재 내 주소: 서울시 동작구 노량진동
-    #       - 서울마음클리닉 (02-1234-5678)  
-    #       - 힐링정신건강의학과 (02-9876-5432)
-    #     """)
-    #     st.markdown("[🔗 심린이 추천병원 찾아보기](https://www.google.com/maps/search/정신건강+상담센터/)")
-    #     st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("**📌 북마크 목록**")
+        # 이미지와 유사한 북마크 목록 UI 생성 (st.write 사용)
+        st.write("🎬 영화 - 아이언맨")
+        st.write("📺 드라마 - 푹싹 속았수다")
+        st.write("🎵 노래 - 아기상어")
 
 
 def chat_bot():
