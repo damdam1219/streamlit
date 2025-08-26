@@ -9,6 +9,9 @@ from streamlit_folium import st_folium
 from geopy.geocoders import Nominatim
 import plotly.express as px
 from PIL import Image
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+from openai import OpenAI
+
 
 # 페이지 기본 설정
 st.set_page_config(page_title="츄러스미 심리케어",layout='wide')
@@ -267,77 +270,123 @@ def my_dashboard():
         st.write("🎵 노래 - 아기상어")
 
 
+@st.cache_resource
+def load_emotion_model():
+    model_name = "Jinuuuu/KoELECTRA_fine_tunning_emotion"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSequenceClassification.from_pretrained(model_name)
+    return pipeline("text-classification", model=model, tokenizer=tokenizer, return_all_scores=True)
+
+emotion_classifier = load_emotion_model()
+
+# 레이블 매핑
+label_map = {
+    "angry": "분노",
+    "happy": "행복",
+    "anxious": "불안",
+    "embarrassed": "당황",
+    "sad": "슬픔",
+    "hurt": "상처"
+}
+
+# 감정 예측 함수
+def predict_emotion(text: str):
+    result = emotion_classifier(text)[0]
+    best = max(result, key=lambda x: x["score"])
+    emotion = label_map.get(best["label"], best["label"])
+    score = best["score"]
+    return emotion, score
+
+# -----------------------------
+# 챗봇 함수
+# -----------------------------
 def chat_bot():
+    client = OpenAI(api_key="")  # 키 수정
+
     col1, col2 = st.columns([1,10])
     with col2:
-        st.subheader("츄러스미~! 나와 대화해볼래?")
+        st.subheader("츄러스미~! 나와 대화해볼래? 👋")
         st.markdown("심린이에게 고민을 털어놔보세요.❤️")
     with col1:
-        img = Image.open("츄러스미_2.png")  # 츄러스미 이미지 삽입
-        st.image(img, width = 100)
+        try:
+            img = Image.open("츄러스미_2.png")
+            st.image(img, width=100)
+        except FileNotFoundError:
+            st.warning("`츄러스미_2.png` 이미지를 찾을 수 없습니다.")
+            st.write("📌 이미지 없음")
 
-    # 💬 CSS 말풍선 스타일만
+    # 💬 CSS 말풍선 스타일
     st.markdown("""
         <style>
-            .message {
-                max-width: 80%;
-                padding: 10px 15px;
-                border-radius: 20px;
-                margin: 8px 0;
-                display: inline-block;
-                word-wrap: break-word;
-                font-size: 16px;
-                line-height: 1.4;
-            }
-            .bot {
-                background-color: #f1f0f0;
-                text-align: left;
-            }
-            .user {
-                background-color: #dcf8c6;
-                text-align: right;
-                float: right;
-            }
-            .clearfix::after {
-                content: "";
-                display: table;
-                clear: both;
-            }
+            .message { max-width: 80%; padding: 10px 15px; border-radius: 20px; margin: 8px 0; display: inline-block; word-wrap: break-word; font-size: 16px; line-height: 1.4;}
+            .bot { background-color: #f1f0f0; text-align: left; }
+            .user { background-color: #dcf8c6; text-align: right; float: right; }
+            .clearfix::after { content: ""; display: table; clear: both; }
         </style>
     """, unsafe_allow_html=True)
 
     # 세션 초기화
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = [
-            {"role": "bot", "message": "안녕하세요! 필요한 도움이 있으신가요?"}
+            {"role": "bot", "message": "안녕하세요! 필요한 도움이 있으신가요? 당신의 이야기를 들려주세요. 😊"}
         ]
 
-    # 대화 렌더링 (채팅 박스 제거)
-    for chat in st.session_state.chat_history:
-        if chat["role"] == "user":
-            st.markdown(f"""
-                <div class="clearfix">
-                    <div class="message user">{chat['message']}</div>
-                </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-                <div class="clearfix">
-                    <div class="message bot">{chat['message']}</div>
-                </div>
-            """, unsafe_allow_html=True)
+    # --- 사용자 입력 받기 ---
+    user_input = st.chat_input("💬 오늘 기분은 어땠나요? (예: 오늘 너무 속상했어...)")
 
-    # 입력 폼
-    with st.form(key="chat_form", clear_on_submit=True):
-        user_input = st.text_input("💬 오늘 기분은 어땠나요?", placeholder="예: 오늘 너무 속상했어...")
-        submitted = st.form_submit_button("전송")
-
-    if submitted and user_input:
+    if user_input:
+        # 1️⃣ 사용자 메시지 바로 추가
         st.session_state.chat_history.append({"role": "user", "message": user_input})
 
-        # 임시 응답
-        response = f"{user_input}라고 하셨군요. 마음이 많이 힘드셨겠어요. 🧸"
-        st.session_state.chat_history.append({"role": "bot", "message":  response})
+        with st.spinner("당신의 감정을 분석하고 상담사 연결 중... 🧘‍♀️"):
+            try:
+                # 2️⃣ 감정분류 (문자 레이블 처리)
+                result = emotion_classifier(user_input)[0]
+                best = max(result, key=lambda x: x["score"])
+                label_map = {
+                    "angry": "분노",
+                    "happy": "행복",
+                    "anxious": "불안",
+                    "embarrassed": "당황",
+                    "sad": "슬픔",
+                    "hurt": "상처"
+                }
+                emotion = label_map.get(best["label"], best["label"])
+                score = best["score"]
+
+                # 3️⃣ GPT 프롬프트 구성
+                prompt = f"""
+                당신은 친절하고 경험 많은 심리상담사야.
+                사용자가 입력한 문장: "{user_input}"
+                감정 분석 결과: {emotion} (신뢰도: {score:.2f})
+
+                - 먼저 사용자의 감정을 충분히 공감하고 이해를 표현해줘.
+                - 상황을 개선할 수 있는 현실적 조언이나 방법 2-3가지 제안.
+                - 감정 분석 신뢰도가 0.6 미만이면 자연스럽게 되묻기.
+                - 말투는 친근하고 따뜻하게 작성.
+                """
+
+                # 4️⃣ GPT 응답 생성
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "너는 따뜻한 심리상담사이다. 사용자의 감정을 공감하고 현실적인 조언을 제공해줘."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7
+                )
+                answer = response.choices[0].message.content
+
+                # 5️⃣ 챗봇 답변 추가
+                st.session_state.chat_history.append({"role": "bot", "message": answer})
+
+            except Exception as e:
+                st.error(f"상담사 연결에 실패했습니다. 오류: {e}")
+
+    # --- 대화 렌더링 ---
+    for chat in st.session_state.chat_history:
+        cls = "user" if chat["role"] == "user" else "bot"
+        st.markdown(f'<div class="clearfix"><div class="message {cls}">{chat["message"]}</div></div>', unsafe_allow_html=True)
 
 def hospital():
     st.title("🏥심린이 병원추천")
