@@ -69,7 +69,7 @@ def login():
     col1, col2, col3 = st.columns([3,2,3])
    
     with col2:
-        img = Image.open("data/츄러스미_1.png")  # 츄러스미 이미지 삽입
+        img = Image.open("츄러스미_1.png")  # 츄러스미 이미지 삽입
         st.image(img, use_container_width=True)
     
         st.subheader("🔐로그인")
@@ -316,7 +316,7 @@ def chat_bot():
         st.markdown("심린이에게 고민을 털어놔보세요.❤️")
     with col1:
         try:
-            img = Image.open("data/츄러스미_2.png")
+            img = Image.open("츄러스미_2.png")
             st.image(img, width=100)
         except FileNotFoundError:
             st.warning("`츄러스미_2.png` 이미지를 찾을 수 없습니다.")
@@ -727,7 +727,7 @@ def u_my_dashboard():
         st.markdown(" **⭐심리 챗봇과 연계된 맞춤 행동 추천**")
         st.markdown(" **⭐심리 맟춤 미디어 추천까지!!!**")
         with col4:
-            img = Image.open("data/설명하는츄러스미.png")
+            img = Image.open("설명하는츄러스미.png")
             st.image(img, width=450) # 츄러스미 이미지 삽입
 
     with col1:
