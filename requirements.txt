@@ -6,3 +6,8 @@ plotly
 folium
 streamlit-folium
 geopy
+Pillow
+transformers
+openai
+python-dotenv
+torch
