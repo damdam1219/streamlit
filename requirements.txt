@@ -8,6 +8,6 @@ streamlit-folium
 geopy
 Pillow
 transformers
+torch
 openai
 python-dotenv
-torch
