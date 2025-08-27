@@ -305,7 +305,7 @@ def predict_emotion(text: str):
 
 def chat_bot():
     load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = st.secrets["OPENAI_API_KEY"]
 
 # ✅ OpenAI 클라이언트 초기화
     client = OpenAI(api_key=api_key)# 키 수정
